@@ -48,7 +48,7 @@ To run this project:
 1. Open Stata.
 2. Set the working directory:
    ```stata
-   cd "D:/state do"
+   cd "Your Path/state do"
 3. Run the script:
    ```stata
    do ARIMA_analysis.do
