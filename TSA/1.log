@@ -1,0 +1,191 @@
+-------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  D:\state do\1.log
+  log type:  text
+ opened on:  18 Jun 2024, 23:38:28
+
+. use data.dta,clear
+
+. tsset YEAR
+        time variable:  YEAR, 1 to 29
+                delta:  1 unit
+
+. //YEAR代指编号,形成伪编年
+. /*
+> data resource:"Returns to Scale in Electricity Supply" by Marc Nerlove, Stanford University, Group E
+> outputbillionkwh:the number of out put fuel
+> capitalpriceindex:a apprasial used to show the price of the fuel
+> */
+. dfuller outputbillionkwh
+
+Dickey-Fuller test for unit root                   Number of obs   =        28
+
+                               ---------- Interpolated Dickey-Fuller ---------
+                  Test         1% Critical       5% Critical      10% Critical
+               Statistic           Value             Value             Value
+------------------------------------------------------------------------------
+ Z(t)              5.542            -3.730            -2.992            -2.626
+------------------------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 1.0000
+
+. dfuller capitalpriceindex
+
+Dickey-Fuller test for unit root                   Number of obs   =        28
+
+                               ---------- Interpolated Dickey-Fuller ---------
+                  Test         1% Critical       5% Critical      10% Critical
+               Statistic           Value             Value             Value
+------------------------------------------------------------------------------
+ Z(t)             -6.361            -3.730            -2.992            -2.626
+------------------------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000
+
+. dfgls capitalpriceindex, notrend
+ 
+DF-GLS for capitalpricein~x                              Number of obs =    20
+Maxlag = 8 chosen by Schwert criterion
+ 
+               DF-GLS mu       1% Critical       5% Critical      10% Critical
+  [lags]     Test Statistic        Value             Value             Value
+------------------------------------------------------------------------------
+    8            -2.015           -2.654            -2.543            -2.097
+    7            -1.800           -2.654            -2.404            -1.999
+    6            -1.917           -2.654            -2.334            -1.958
+    5            -2.669           -2.654            -2.318            -1.961
+    4            -2.962           -2.654            -2.344            -1.998
+    3            -3.830           -2.654            -2.396            -2.055
+    2            -2.955           -2.654            -2.462            -2.121
+    1            -3.741           -2.654            -2.528            -2.183
+ 
+Opt Lag (Ng-Perron seq t) =  7 with RMSE  12.95014
+Min SC   =  6.046156 at lag  1 with RMSE  17.69517
+Min MAIC =  10.63618 at lag  1 with RMSE  17.69517
+
+. pperron capitalpriceindex
+
+Phillips-Perron test for unit root                 Number of obs   =        28
+                                                   Newey-West lags =         3
+
+                               ---------- Interpolated Dickey-Fuller ---------
+                  Test         1% Critical       5% Critical      10% Critical
+               Statistic           Value             Value             Value
+------------------------------------------------------------------------------
+ Z(rho)          -31.814           -17.404           -12.596           -10.260
+ Z(t)             -6.497            -3.730            -2.992            -2.626
+------------------------------------------------------------------------------
+MacKinnon approximate p-value for Z(t) = 0.0000
+
+. 
+. 
+. ac capitalpriceindex, lags(10) level(95) generate(New_ac)
+
+. graph save Graph Fig01_AC.gph, replace
+(file Fig01_AC.gph saved)
+
+. graph export Fig01_AC.png, as(png) replace
+(file Fig01_AC.png written in PNG format)
+
+. 
+. 
+. pac capitalpriceindex, lags(10) level(95) generate(New_pac) 
+
+. graph save Graph Fig01_PAC.gph, replace
+(file Fig01_PAC.gph saved)
+
+. graph export Fig01_PAC.png, as(png) replace
+(file Fig01_PAC.png written in PNG format)
+
+. 
+. 
+. graph combine ///www
+>         Fig01_AC.gph ///www
+>         Fig01_PAC.gph ///www
+>         , rows(2) altshrink ////www
+>         title("AC and PAC of D.capitalpriceindex", size(medium))
+
+.         
+. 
+. ************************ARIMAModel************************
+. arima outputbillionkwh, arima(1,1,0)
+
+(setting optimization to BHHH)
+Iteration 0:   log likelihood = -217.13435  
+Iteration 1:   log likelihood = -217.08406  
+Iteration 2:   log likelihood = -217.07744  
+Iteration 3:   log likelihood = -217.07721  
+Iteration 4:   log likelihood = -217.07717  
+(switching optimization to BFGS)
+Iteration 5:   log likelihood = -217.07714  
+Iteration 6:   log likelihood = -217.07713  
+
+ARIMA regression
+
+Sample:  2 - 29                                 Number of obs     =         28
+                                                Wald chi2(1)      =       7.58
+Log likelihood = -217.0771                      Prob > chi2       =     0.0059
+
+----------------------------------------------------------------------------------
+D.               |                 OPG
+outputbillionkwh |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-----------------+----------------------------------------------------------------
+outputbillionkwh |
+           _cons |   546.1356   430.2312     1.27   0.204     -297.102    1389.373
+-----------------+----------------------------------------------------------------
+ARMA             |
+              ar |
+             L1. |   .5644349   .2049937     2.75   0.006     .1626547    .9662151
+-----------------+----------------------------------------------------------------
+          /sigma |   559.4616   72.57119     7.71   0.000     417.2247    701.6985
+----------------------------------------------------------------------------------
+Note: The test of the variance against zero is one sided, and the two-sided
+      confidence interval is truncated at zero.
+
+. predict outputbillionkwh_RES, resid 
+(1 missing value generated)
+
+. corrgram outputbillionkwh_RES 
+
+                                          -1       0       1 -1       0       1
+ LAG       AC       PAC      Q     Prob>Q  [Autocorrelation]  [Partial Autocor]
+-------------------------------------------------------------------------------
+1       -0.1568  -0.1645   .76525  0.3817         -|                 -|        
+2        0.2873   0.8349   3.4323  0.1798          |--                |------  
+3       -0.0054   0.4203   3.4332  0.3295          |                  |---     
+4        0.0909   0.3586   3.7226  0.4448          |                  |--      
+5        0.0406   0.6302   3.7829  0.5811          |                  |-----   
+6       -0.0528   0.2098   3.8895  0.6916          |                  |-       
+7        0.0511   0.4420   3.9939  0.7805          |                  |---     
+8       -0.1022  -0.5248   4.4328  0.8161          |              ----|        
+9        0.2301   1.1788    6.774  0.6606          |-                 |--------
+10       0.0194   1.8510   6.7917  0.7450          |                  |--------
+11      -0.0537   1.4158   6.9341  0.8044          |                  |--------
+12      -0.0897  -0.8693   7.3561  0.8332          |            ------|        
+
+. wntestq outputbillionkwh_RES, lag(10) //白噪声零假设-Q检验【P大于0.05,lag(n)中n<=12即可】
+
+Portmanteau test for white noise
+---------------------------------------
+ Portmanteau (Q) statistic =     6.7917
+ Prob > chi2(10)           =     0.7450
+
+. predict outputbillionkwh_HAT
+(option xb assumed; predicted values)
+
+. label variable outputbillionkwh_HAT "predicted capitalpriceindex"
+
+. 
+. tsline D.productioncostsmillion outputbillionkwh_HAT, lcolor(blue red) lwidth(medium medithic)
+(note:  named style medithic not found in class linewidth, default attributes used)
+(note:  linewidth not found in scheme, default attributes used)
+(note:  named style medithic not found in class linewidth, default attributes used)
+(note:  linewidth not found in scheme, default attributes used)
+
+.         xtitle("") xlabel(, grid gmax gmin) ytitle("outputbillionkwh")
+command xtitle is unrecognized
+r(199);
+
+end of do-file
+
+r(199);
+
+. exit, clear
