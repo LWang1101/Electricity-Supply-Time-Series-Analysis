@@ -66,6 +66,5 @@ The data captures historical electricity output and capital price indices releva
 - Visual outputs are exported in both `.gph` and `.png` formats.
 
 ## 📜 License
-
-This project is for academic and research purposes.  
-If you use it, please cite the original data source and this repository (following the MIT licence).
+   - This project is for academic and research purposes.  
+   - If you use it, please cite the original data source and this repository (following the MIT licence).
